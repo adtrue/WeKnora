@@ -1,0 +1,49 @@
+name: Deploy AdTrue KB to OVH2
+
+# push adtrue-brand -> SSH vào OVH2, git pull + build frontend dist (node container)
+# + docker compose build/up frontend. Backend dùng image upstream (pin trong .env),
+# nên chỉ frontend được build lại. Theo pattern ads-op-internal/deploy.yml.
+on:
+  push:
+    branches: [adtrue-brand]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deploy-weknora-ovh2
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17  # v1.2.0
+        with:
+          host: ${{ secrets.OVH2_HOST }}
+          username: ${{ secrets.OVH2_USER }}
+          key: ${{ secrets.OVH2_SSH_KEY }}
+          port: ${{ secrets.OVH2_PORT }}
+          command_timeout: 30m
+          script: |
+            set -e
+            cd /opt/weknora
+            echo "→ pull code"
+            git fetch origin adtrue-brand
+            git reset --hard origin/adtrue-brand
+            echo "→ build frontend dist (node in docker, chạy bằng uid ubuntu để không để lại file root)"
+            export VITE_FRONTEND_COMMIT=$(git rev-parse --short HEAD)
+            docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp \
+              -e VITE_IS_DOCKER=true -e VITE_FRONTEND_COMMIT \
+              -v /opt/weknora/frontend:/app -w /app \
+              node:22-bookworm-slim \
+              sh -c "npm ci --no-audit --no-fund && npm run build"
+            echo "→ build + rollout frontend image"
+            docker compose build frontend
+            docker compose up -d frontend
+            echo "→ verify"
+            sleep 3
+            curl -sf -o /dev/null http://127.0.0.1:8085/ && echo "frontend OK"
+            docker compose ps frontend
+            echo "✅ Deploy xong $(date -u) — $VITE_FRONTEND_COMMIT"

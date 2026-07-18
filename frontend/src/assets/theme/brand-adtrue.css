@@ -1,0 +1,34 @@
+/*
+ * AdTrue KB branding — overrides the TDesign brand (green) ramp with the
+ * AdTrue accent red (#fc4d59, from adtrue.com). Loaded after theme.css so it
+ * wins on specificity order without touching the upstream file (keeps
+ * upstream merges clean).
+ */
+:root,
+:root[theme-mode="light"] {
+    --td-brand-color-1: #feecee;
+    --td-brand-color-2: #fdc8cc;
+    --td-brand-color-3: #fd8b93;
+    --td-brand-color-4: #fc4d59;
+    --td-brand-color-5: #e83e4b;
+    --td-brand-color-6: #d02f3c;
+    --td-brand-color-7: #b8232f;
+    --td-brand-color-8: #9e1a25;
+    --td-brand-color-9: #85121b;
+    --td-brand-color-10: #6b0c13;
+    --td-brand-color-disabled: #fdb0b6;
+}
+
+:root[theme-mode="dark"] {
+    --td-brand-color-1: #fc4d5920;
+    --td-brand-color-2: #85121b;
+    --td-brand-color-3: #9e1a25;
+    --td-brand-color-4: #b8232f;
+    --td-brand-color-5: #d02f3c;
+    --td-brand-color-6: #fc4d59;
+    --td-brand-color-7: #fd6570;
+    --td-brand-color-8: #fd8b93;
+    --td-brand-color-9: #feb0b6;
+    --td-brand-color-10: #ffd4d7;
+    --td-brand-color-disabled: #7a2a30;
+}
