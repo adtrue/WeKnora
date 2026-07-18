@@ -19,6 +19,26 @@
     --td-brand-color-disabled: #fdb0b6;
 }
 
+/*
+ * Login screen: only the login card. Hide the marketing showcase column and
+ * the external Website/GitHub header links (language switcher stays), then
+ * center the form. Done here instead of Login.vue to keep upstream merges
+ * clean — these selectors target DOM classes, so scoped styles don't matter.
+ */
+.login-layout .showcase-section {
+    display: none;
+}
+.login-layout .header-links .header-link[href*="weknora.weixin.qq.com"],
+.login-layout .header-links .header-link[href*="github.com"] {
+    display: none;
+}
+.login-layout .form-section {
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
 :root[theme-mode="dark"] {
     --td-brand-color-1: #fc4d5920;
     --td-brand-color-2: #85121b;
