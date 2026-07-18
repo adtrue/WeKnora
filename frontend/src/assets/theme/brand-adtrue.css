@@ -39,6 +39,12 @@
     justify-content: center !important;
     padding: 40px !important;
 }
+/* Bare login card: email + password + button only ("Create Account" and the
+   sign-in hint already hide themselves when registration is invite-only) */
+.login-layout .form-card .form-welcome,
+.login-layout .form-card .login-features {
+    display: none !important;
+}
 
 :root[theme-mode="dark"] {
     --td-brand-color-1: #fc4d5920;
