@@ -786,7 +786,7 @@ onMounted(async () => {
   min-height: 100%;
   overflow: hidden;
   position: relative;
-  background: linear-gradient(225deg, #022c22 0%, #064e3b 15%, #065f46 25%, #047857 38%, #059669 50%, #07C05F 65%, #10B981 78%, #34D399 90%, #6EE7B7 100%);
+  background: linear-gradient(225deg, #141414 0%, #241416 15%, #33181c 25%, #4a1d23 38%, #6b1f28 50%, #a02833 65%, #d02f3c 78%, #fc4d59 90%, #fd8b93 100%);
 
   &::before {
     content: '';
@@ -1764,7 +1764,7 @@ onMounted(async () => {
 <style lang="less">
 html[theme-mode="dark"] {
   .login-layout {
-    background: linear-gradient(225deg, #011a14 0%, #032e22 15%, #043a2c 25%, #05503d 38%, #046647 50%, #038a56 65%, #049b60 78%, #06a06a 90%, #07b074 100%);
+    background: linear-gradient(225deg, #0d0d0d 0%, #150e10 15%, #1f1113 25%, #2c1417 38%, #3f171c 50%, #571a21 65%, #701d26 78%, #8a202b 90%, #a52431 100%);
   }
 
   .knowledge-node {
