@@ -25,18 +25,19 @@
  * center the form. Done here instead of Login.vue to keep upstream merges
  * clean — these selectors target DOM classes, so scoped styles don't matter.
  */
+/* !important: Login.vue's scoped rules (.x[data-v]) load later and would win otherwise */
 .login-layout .showcase-section {
-    display: none;
+    display: none !important;
 }
 .login-layout .header-links .header-link[href*="weknora.weixin.qq.com"],
 .login-layout .header-links .header-link[href*="github.com"] {
-    display: none;
+    display: none !important;
 }
 .login-layout .form-section {
-    flex: 1 1 auto;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
+    flex: 1 1 auto !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 40px !important;
 }
 
 :root[theme-mode="dark"] {
