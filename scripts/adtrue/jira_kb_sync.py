@@ -162,6 +162,12 @@ def main():
         with open(state_path) as f:
             state = json.load(f)
 
+    def save_state():
+        tmp = state_path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(state, f, indent=1)
+        os.replace(tmp, state_path)
+
     next_token, synced, skipped = None, 0, 0
     while True:
         params = {
@@ -190,14 +196,16 @@ def main():
             kid = weknora_upload(cfg, key + ".md", md)
             state[key] = {"updated": updated, "knowledge_id": kid}
             synced += 1
+            # Persist after every upload so an interrupted run never re-uploads
+            # (duplicates) what already made it into the KB.
+            save_state()
             time.sleep(0.3)  # be gentle with ingestion pipeline
         next_token = page.get("nextPageToken")
         if not next_token or not issues:
             break
 
     if not args.dry_run:
-        with open(state_path, "w") as f:
-            json.dump(state, f, indent=1)
+        save_state()
     print("jira_kb_sync: %d synced, %d unchanged, %d total known" % (synced, skipped, len(state)))
     return 0
 
