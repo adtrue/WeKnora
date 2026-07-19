@@ -133,6 +133,13 @@ def weknora_upload(cfg, filename, content):
         {"X-API-Key": cfg["WEKNORA_API_KEY"], "Content-Type": "multipart/form-data; boundary=" + boundary},
         body,
     )
+    if status == 409:
+        # duplicate_file: identical content already in the KB — adopt the
+        # existing document instead of failing (response carries its id).
+        data = json.loads(resp)
+        existing = (data.get("data") or {}).get("id", "")
+        if existing:
+            return existing
     if status not in (200, 201):
         raise RuntimeError("WeKnora upload %s -> HTTP %s: %s" % (filename, status, resp[:300]))
     data = json.loads(resp)
