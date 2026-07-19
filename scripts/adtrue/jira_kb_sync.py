@@ -47,7 +47,7 @@ def load_config(path):
                     k, v = line.split("=", 1)
                     cfg[k.strip()] = v.strip()
     cfg.setdefault("WEKNORA_BASE_URL", "https://kb.adtrue.io/api/v1")
-    cfg.setdefault("JIRA_JQL", "ORDER BY updated DESC")
+    cfg.setdefault("JIRA_JQL", "updated >= \"2015-01-01\" ORDER BY updated DESC")
     return cfg
 
 
