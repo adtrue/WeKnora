@@ -71,7 +71,7 @@ func TestIMStreamLifecycle_agentToolRetract(t *testing.T) {
 	if liveOnly != "好的，让我先搜索知识库。" {
 		t.Fatalf("live answer phase = %q", liveOnly)
 	}
-	if strings.Contains(liveOnly, "思考过程") {
+	if strings.Contains(liveOnly, "Quá trình suy nghĩ") {
 		t.Fatal("think header must not appear before tool retract")
 	}
 
@@ -81,7 +81,7 @@ func TestIMStreamLifecycle_agentToolRetract(t *testing.T) {
 		step.Pending = true
 	})
 	duringTools := state.intermediate()
-	if !strings.Contains(duringTools, "思考过程") {
+	if !strings.Contains(duringTools, "Quá trình suy nghĩ") {
 		t.Fatalf("after retract should show think block, got: %q", duringTools)
 	}
 	if !strings.Contains(duringTools, "好的，让我先搜索知识库") {
@@ -154,7 +154,7 @@ func TestIMStreamLifecycle_quickQAPipeline(t *testing.T) {
 	if intermediate == "" {
 		t.Fatal("pipeline progress should be visible")
 	}
-	if strings.Contains(intermediate, "思考过程") {
+	if strings.Contains(intermediate, "Quá trình suy nghĩ") {
 		t.Fatalf("quick QA must not use agent think header, got: %q", intermediate)
 	}
 

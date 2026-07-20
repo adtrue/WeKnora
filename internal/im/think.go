@@ -76,8 +76,8 @@ func quickQAPipelineContent(parts IMStreamParts) string {
 
 // RAGThinkingStyle matches Web RagPipelineProgress thinking row (agent.think).
 var RAGThinkingStyle = ThinkBlockStyle{
-	ThinkingHeader: "> 💭 **思考中...**\n",
-	ThoughtHeader:  "> 💭 **思考**\n",
+	ThinkingHeader: "> 💭 **Đang suy nghĩ...**\n",
+	ThoughtHeader:  "> 💭 **Suy nghĩ**\n",
 	LinePrefix:     "> ",
 	LineSuffix:     "",
 	Separator:      "\n---\n\n",
@@ -195,8 +195,8 @@ type ThinkBlockStyle struct {
 // FormatIMDisplayContent, which is called from the shared streaming path with no
 // platform context — a cross-platform change rather than a per-platform patch.
 var MarkdownThinkStyle = ThinkBlockStyle{
-	ThinkingHeader: "> 💭 **思考中...**\n",
-	ThoughtHeader:  "> 💭 **思考过程**\n",
+	ThinkingHeader: "> 💭 **Đang suy nghĩ...**\n",
+	ThoughtHeader:  "> 💭 **Quá trình suy nghĩ**\n",
 	LinePrefix:     "> ",
 	LineSuffix:     "",
 	Separator:      "\n---\n\n",
@@ -206,8 +206,8 @@ var MarkdownThinkStyle = ThinkBlockStyle{
 // Uses the same blockquote format as other platforms for reliable rendering
 // during streaming (where incomplete markdown can cause API failures).
 var TelegramThinkStyle = ThinkBlockStyle{
-	ThinkingHeader: "> 💭 *思考中...*\n",
-	ThoughtHeader:  "> 💭 *思考过程*\n",
+	ThinkingHeader: "> 💭 *Đang suy nghĩ...*\n",
+	ThoughtHeader:  "> 💭 *Quá trình suy nghĩ*\n",
 	LinePrefix:     "> ",
 	LineSuffix:     "",
 	Separator:      "\n---\n\n",

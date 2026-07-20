@@ -454,10 +454,10 @@ func makeUserKey(channelID, userID, chatID, threadID string) string {
 
 // nonTextTypeLabel maps a message type to a Chinese label for LLM instructions.
 var nonTextTypeLabel = map[string]string{
-	"image": "图片",
-	"file":  "文件",
-	"video": "视频",
-	"voice": "语音",
+	"image": "hình ảnh",
+	"file":  "tệp",
+	"video": "video",
+	"voice": "tin nhắn thoại",
 }
 
 // formatQuotedContext formats a QuotedMessage into a labeled string for LLM context.
@@ -472,9 +472,9 @@ func formatQuotedContext(quote *QuotedMessage) string {
 	if quote.NonTextType != "" {
 		label := nonTextTypeLabel[quote.NonTextType]
 		if label == "" {
-			label = "该类型的"
+			label = "loại này"
 		}
-		return "用户引用了一条" + label + "消息，但你无法查看该内容。请直接告知用户你目前无法处理" + label + "消息，建议用户用文字描述问题。不要猜测该消息的内容。"
+		return "Người dùng đã trích dẫn một tin nhắn " + label + ", nhưng bạn không thể xem nội dung đó. Hãy nói thẳng với người dùng rằng hiện tại bạn không thể xử lý tin nhắn " + label + ", và đề nghị họ mô tả vấn đề bằng văn bản. Không được đoán nội dung tin nhắn đó."
 	}
 	if quote.Content == "" {
 		return ""
@@ -486,9 +486,9 @@ func formatQuotedContext(quote *QuotedMessage) string {
 	}
 	// Prevent quoted content from escaping the XML tag boundary.
 	content = strings.ReplaceAll(content, "</quoted_message>", "")
-	label := "以下是用户引用的一条历史消息，仅作为上下文参考："
+	label := "Dưới đây là một tin nhắn cũ mà người dùng trích dẫn, chỉ dùng làm ngữ cảnh tham khảo:"
 	if quote.IsBotMessage {
-		label = "以下是用户引用的你（机器人）之前的回复，仅作为上下文参考："
+		label = "Dưới đây là câu trả lời trước đây của bạn (bot) mà người dùng trích dẫn, chỉ dùng làm ngữ cảnh tham khảo:"
 	}
 	return label + "\n<quoted_message>\n" + content + "\n</quoted_message>"
 }
@@ -582,13 +582,13 @@ func (s *Service) buildIMMCPAuthNotice(ctx context.Context, services []imMCPAuth
 			}
 		}
 		if authURL != "" {
-			lines = append(lines, fmt.Sprintf("• %s：%s", name, authURL))
+			lines = append(lines, fmt.Sprintf("• %s: %s", name, authURL))
 		} else {
-			lines = append(lines, fmt.Sprintf("• %s（请在 WeKnora 管理后台完成 OAuth 授权）", name))
+			lines = append(lines, fmt.Sprintf("• %s (vui lòng hoàn tất ủy quyền OAuth trong trang quản trị WeKnora)", name))
 		}
 	}
 
-	return "⚠️ 以下 MCP 服务需要授权后才能使用，请点击链接完成授权，然后重新发送你的消息：\n" +
+	return "⚠️ Các dịch vụ MCP sau cần được ủy quyền trước khi sử dụng, vui lòng nhấp vào liên kết để hoàn tất ủy quyền rồi gửi lại tin nhắn của bạn:\n" +
 		strings.Join(lines, "\n")
 }
 
@@ -1412,7 +1412,7 @@ func (s *Service) HandleMessage(ctx context.Context, msg *IncomingMessage, chann
 		if !s.rateLimiter.Allow(ctx, rateLimitKey, s.rateLimitMax) {
 			logger.Warnf(ctx, "[IM] Rate limited: channel=%s user=%s chat=%s", channelID, msg.UserID, msg.ChatID)
 			_ = adapter.SendReply(ctx, msg, &ReplyMessage{
-				Content: "您的消息发送过于频繁，请稍后再试。",
+				Content: "Bạn gửi tin nhắn quá nhanh, vui lòng thử lại sau.",
 				IsFinal: true,
 			})
 			return nil
@@ -1441,7 +1441,7 @@ func (s *Service) HandleMessage(ctx context.Context, msg *IncomingMessage, chann
 	if msg.Content == "" && (msg.MessageType == MessageTypeImage || msg.MessageType == MessageTypeFile) {
 		logger.Infof(ctx, "[IM] Skipping QA for non-text message without content: type=%s", msg.MessageType)
 		if err := adapter.SendReply(ctx, msg, &ReplyMessage{
-			Content: "当前渠道未配置文件知识库，无法处理图片/文件消息。请在渠道设置中配置文件知识库后再发送，或直接用文字描述您的问题。",
+			Content: "Kênh hiện tại chưa cấu hình kho tri thức tệp nên không thể xử lý tin nhắn hình ảnh/tệp. Vui lòng cấu hình kho tri thức tệp trong cài đặt kênh rồi gửi lại, hoặc mô tả vấn đề của bạn bằng văn bản.",
 			IsFinal: true,
 		}); err != nil {
 			logger.Warnf(ctx, "[IM] Failed to send non-text hint reply: %v", err)
@@ -1482,7 +1482,7 @@ func (s *Service) HandleMessage(ctx context.Context, msg *IncomingMessage, chann
 	// Unrecognised slash-word: show help hint instead of sending to QA.
 	if LooksLikeCommand(msg.Content) {
 		_ = adapter.SendReply(ctx, msg, &ReplyMessage{
-			Content: "未知指令，发送 `/help` 查看所有可用指令。",
+			Content: "Lệnh không hợp lệ, gõ `/help` để xem các lệnh khả dụng.",
 			IsFinal: true,
 		})
 		return nil
@@ -1554,7 +1554,7 @@ func (s *Service) HandleMessage(ctx context.Context, msg *IncomingMessage, chann
 		qaCancel()
 		logger.Warnf(ctx, "[IM] Queue rejected: user=%s reason=%v", msg.UserID, enqueueErr)
 		_ = adapter.SendReply(ctx, msg, &ReplyMessage{
-			Content: "当前排队人数较多，请稍后再试。",
+			Content: "Hàng đợi hiện đang quá tải, vui lòng thử lại sau.",
 			IsFinal: true,
 		})
 		return nil
@@ -1564,9 +1564,9 @@ func (s *Service) HandleMessage(ctx context.Context, msg *IncomingMessage, chann
 		logger.Infof(ctx, "[IM] Enqueued: user=%s pos=%d depth=%d", msg.UserID, pos, s.qaQueue.Metrics().Depth)
 		// In multi-instance mode the local queue position does not reflect global
 		// depth, so use a generic "queued" hint instead of an exact number.
-		queueMsg := fmt.Sprintf("收到，前面还有 %d 条消息在处理，请稍候 ⏳", pos)
+		queueMsg := fmt.Sprintf("Đã nhận, còn %d tin nhắn đang xử lý phía trước, vui lòng chờ ⏳", pos)
 		if s.redis != nil {
-			queueMsg = "收到，当前排队中，请稍候 ⏳"
+			queueMsg = "Đã nhận, đang trong hàng đợi, vui lòng chờ ⏳"
 		}
 		_ = adapter.SendReply(ctx, msg, &ReplyMessage{
 			Content: queueMsg,
@@ -1627,7 +1627,7 @@ func (s *Service) executeQARequest(req *qaRequest) {
 	answer, err := s.runQA(ctx, req.session, req.msg.Content, req.agent, kbIDs, req.userKey, req.msg.Quote)
 	if err != nil {
 		logger.Errorf(ctx, "[IM] QA failed: %v, sending fallback reply", err)
-		answer = "抱歉，处理您的问题时出现了异常，请稍后再试。"
+		answer = "Xin lỗi, có lỗi khi xử lý câu hỏi của bạn, vui lòng thử lại sau."
 	}
 
 	reply := &ReplyMessage{
@@ -1673,7 +1673,7 @@ func (s *Service) handleCommand(
 	if err != nil {
 		logger.Errorf(ctx, "[IM] Command /%s error: %v", cmd.Name(), err)
 		_ = adapter.SendReply(ctx, msg, &ReplyMessage{
-			Content: "抱歉，执行指令时出现了异常，请稍后再试。",
+			Content: "Xin lỗi, có lỗi khi thực thi lệnh, vui lòng thử lại sau.",
 			IsFinal: true,
 		})
 		return err
@@ -2427,9 +2427,9 @@ loop:
 
 	finalDisplay := cleanIMContent(ctx, FormatIMFinalFromParts(parts), tenant, s.defaultFileSvc, s.storageResolver)
 	if noVisibleContent || finalDisplay == "" {
-		fallback := "抱歉，我暂时无法回答这个问题。"
+		fallback := "Xin lỗi, hiện tại tôi chưa thể trả lời câu hỏi này."
 		if finalErr != nil {
-			fallback = "抱歉，处理您的问题时出现了异常，请稍后再试。"
+			fallback = "Xin lỗi, có lỗi khi xử lý câu hỏi của bạn, vui lòng thử lại sau."
 		}
 		finalDisplay = fallback
 		if answer == "" {
@@ -2451,7 +2451,7 @@ loop:
 	}
 
 	if answer == "" {
-		answer = "抱歉，我暂时无法回答这个问题。"
+		answer = "Xin lỗi, hiện tại tôi chưa thể trả lời câu hỏi này."
 	}
 
 	assistantMsg.Content = answer
@@ -2469,7 +2469,7 @@ func (s *Service) fallbackNonStream(ctx context.Context, msg *IncomingMessage, s
 	answer, err := s.runQA(ctx, session, msg.Content, customAgent, kbIDs, userKey, msg.Quote)
 	if err != nil {
 		logger.Errorf(ctx, "[IM] QA fallback failed: %v", err)
-		answer = "抱歉，处理您的问题时出现了异常，请稍后再试。"
+		answer = "Xin lỗi, có lỗi khi xử lý câu hỏi của bạn, vui lòng thử lại sau."
 	}
 
 	return adapter.SendReply(ctx, msg, &ReplyMessage{Content: formatIMOutboundAnswer(ctx, answer, tenant, s.defaultFileSvc, s.storageResolver), IsFinal: true})
@@ -2629,7 +2629,7 @@ func (s *Service) runQA(ctx context.Context, session *types.Session, query strin
 		}
 	case <-ctx.Done():
 		// Mark assistant message as completed to avoid dangling incomplete records
-		assistantMsg.Content = "抱歉，回答已被取消。"
+		assistantMsg.Content = "Xin lỗi, câu trả lời đã bị hủy."
 		assistantMsg.IsCompleted = true
 		// Use a fresh context since the original is cancelled
 		if updateErr := s.messageService.UpdateMessage(context.WithoutCancel(ctx), assistantMsg); updateErr != nil {
@@ -2648,7 +2648,7 @@ func (s *Service) runQA(ctx context.Context, session *types.Session, query strin
 		return "", qaError
 	}
 	if answer == "" {
-		answer = "抱歉，我暂时无法回答这个问题。"
+		answer = "Xin lỗi, hiện tại tôi chưa thể trả lời câu hỏi này."
 	}
 	if notice := s.buildIMMCPAuthNotice(ctx, authServices); notice != "" {
 		answer = appendIMAuthNotice(answer, notice)
@@ -2880,8 +2880,8 @@ func (s *Service) handleFileMessage(ctx context.Context, msg *IncomingMessage, a
 	if !ok {
 		logger.Infof(ctx, "[IM] Adapter for platform %s does not support file download, ignoring file message", msg.Platform)
 		return s.sendSmartReply(ctx, adapter, msg, channel,
-			"用户尝试发送文件，但当前平台暂不支持文件消息处理。",
-			"❌ 当前平台暂不支持文件消息处理。")
+			"Người dùng đã cố gửi một tệp, nhưng nền tảng hiện tại chưa hỗ trợ xử lý tin nhắn tệp.",
+			"❌ Nền tảng hiện tại chưa hỗ trợ xử lý tin nhắn tệp.")
 	}
 
 	// For image messages, ensure a proper file extension is present.
@@ -2899,8 +2899,8 @@ func (s *Service) handleFileMessage(ctx context.Context, msg *IncomingMessage, a
 	if ext != "" && !supportedKBFileExts[ext] {
 		logger.Infof(ctx, "[IM] Unsupported file type: %s (file=%s)", ext, msg.FileName)
 		return s.sendSmartReply(ctx, adapter, msg, channel,
-			fmt.Sprintf("用户上传了一个不支持的文件类型「%s」。目前支持的类型包括：PDF、Word、TXT、Markdown、Excel、CSV、PPT、图片。", ext),
-			fmt.Sprintf("❌ 不支持的文件类型「%s」。\n\n支持的类型：PDF、Word、TXT、Markdown、Excel、CSV、PPT、图片。", ext))
+			fmt.Sprintf("Người dùng đã tải lên một loại tệp không được hỗ trợ \"%s\". Các loại được hỗ trợ gồm: PDF, Word, TXT, Markdown, Excel, CSV, PPT, hình ảnh.", ext),
+			fmt.Sprintf("❌ Loại tệp không được hỗ trợ \"%s\".\n\nCác loại được hỗ trợ: PDF, Word, TXT, Markdown, Excel, CSV, PPT, hình ảnh.", ext))
 	}
 
 	// Process asynchronously to avoid blocking the message handler
@@ -2919,7 +2919,7 @@ func (s *Service) processFileToKnowledgeBase(ctx context.Context, msg *IncomingM
 	tenant, err := s.tenantService.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		logger.Errorf(ctx, "[IM] Failed to get tenant %d for file processing: %v", tenantID, err)
-		s.sendFileResult(ctx, adapter, msg, msg.FileName, false, "获取空间信息失败", channel)
+		s.sendFileResult(ctx, adapter, msg, msg.FileName, false, "Không lấy được thông tin không gian làm việc", channel)
 		return
 	}
 	kbCtx := context.WithValue(ctx, types.TenantIDContextKey, tenantID)
@@ -2929,7 +2929,7 @@ func (s *Service) processFileToKnowledgeBase(ctx context.Context, msg *IncomingM
 	reader, fileName, err := downloader.DownloadFile(ctx, msg)
 	if err != nil {
 		logger.Errorf(ctx, "[IM] Failed to download file from %s: %v", msg.Platform, err)
-		s.sendFileResult(ctx, adapter, msg, msg.FileName, false, "下载文件失败", channel)
+		s.sendFileResult(ctx, adapter, msg, msg.FileName, false, "Tải tệp xuống thất bại", channel)
 		return
 	}
 	defer reader.Close()
@@ -2942,7 +2942,7 @@ func (s *Service) processFileToKnowledgeBase(ctx context.Context, msg *IncomingM
 	if !supportedKBFileExts[ext] {
 		logger.Infof(ctx, "[IM] Unsupported file type after download: %s (file=%s)", ext, fileName)
 		s.sendFileResult(ctx, adapter, msg, fileName, false,
-			fmt.Sprintf("不支持的文件类型「%s」。支持：PDF、Word、TXT、Markdown、Excel、CSV、PPT、图片", ext), channel)
+			fmt.Sprintf("Loại tệp không được hỗ trợ \"%s\". Hỗ trợ: PDF, Word, TXT, Markdown, Excel, CSV, PPT, hình ảnh", ext), channel)
 		return
 	}
 
@@ -2950,7 +2950,7 @@ func (s *Service) processFileToKnowledgeBase(ctx context.Context, msg *IncomingM
 	content, err := io.ReadAll(reader)
 	if err != nil {
 		logger.Errorf(ctx, "[IM] Failed to read file content: %v", err)
-		s.sendFileResult(ctx, adapter, msg, fileName, false, "读取文件内容失败", channel)
+		s.sendFileResult(ctx, adapter, msg, fileName, false, "Đọc nội dung tệp thất bại", channel)
 		return
 	}
 
@@ -2964,11 +2964,11 @@ func (s *Service) processFileToKnowledgeBase(ctx context.Context, msg *IncomingM
 		// Check for duplicate file
 		if strings.Contains(errMsg, "duplicate") || strings.Contains(errMsg, "already exists") {
 			logger.Infof(ctx, "[IM] File already exists in knowledge base: %s", fileName)
-			s.sendFileResult(ctx, adapter, msg, fileName, false, "文件已存在于知识库中", channel)
+			s.sendFileResult(ctx, adapter, msg, fileName, false, "Tệp đã tồn tại trong kho tri thức", channel)
 			return
 		}
 		logger.Errorf(ctx, "[IM] Failed to create knowledge from file: %v", err)
-		s.sendFileResult(ctx, adapter, msg, fileName, false, "保存到知识库失败", channel)
+		s.sendFileResult(ctx, adapter, msg, fileName, false, "Lưu vào kho tri thức thất bại", channel)
 		return
 	}
 
@@ -2989,16 +2989,16 @@ func (s *Service) sendFileResult(ctx context.Context, adapter Adapter, msg *Inco
 
 	var fallback string
 	if success {
-		fallback = fmt.Sprintf("✅ %s已保存到知识库，正在解析中，完成后会通知你～", typeName)
+		fallback = fmt.Sprintf("✅ %s đã được lưu vào kho tri thức, đang được phân tích, sẽ thông báo cho bạn khi hoàn tất.", typeName)
 	} else {
-		fallback = fmt.Sprintf("❌ %s处理失败：%s", typeName, errDetail)
+		fallback = fmt.Sprintf("❌ Xử lý %s thất bại: %s", typeName, errDetail)
 	}
 
 	var situation string
 	if success {
-		situation = fmt.Sprintf("用户上传的%s已成功保存到知识库，但还需要后台解析文档内容（这需要一些时间）。请告知用户文件已收到，正在解析处理中，解析完成后会自动推送结果。", typeName)
+		situation = fmt.Sprintf("%s người dùng tải lên đã được lưu vào kho tri thức, nhưng hệ thống còn cần phân tích nội dung tài liệu ở nền (việc này mất một chút thời gian). Hãy báo cho người dùng rằng tệp đã được nhận, đang được phân tích xử lý, và kết quả sẽ tự động được gửi khi phân tích xong.", typeName)
 	} else {
-		situation = fmt.Sprintf("用户上传的%s处理失败，原因：%s。", typeName, errDetail)
+		situation = fmt.Sprintf("Xử lý %s người dùng tải lên thất bại, lý do: %s.", typeName, errDetail)
 	}
 
 	if err := s.sendSmartReply(ctx, adapter, msg, channel, situation, fallback); err != nil {
@@ -3007,10 +3007,10 @@ func (s *Service) sendFileResult(ctx context.Context, adapter Adapter, msg *Inco
 }
 
 // smartReplySystemPrompt is the system prompt used for generating smart notification replies.
-const smartReplySystemPrompt = "你是一个专业的 IM 机器人助手。请根据以下事件情况，生成一条简洁、清晰的通知消息。" +
-	"要求：1) 可适当使用 emoji 但不要过多；2) 语气专业平等，像同事之间对话，不要谄媚讨好，不要用「啦」「哦」「呢」「哟」等撒娇语气词；" +
-	"3) 直接输出消息内容，不要加任何额外解释；" +
-	"4) 如果事件中包含摘要或详细内容，请用 Markdown 格式结构化展示（使用标题、列表、加粗等），完整呈现，不要删减或概括；如果是简单通知，则控制在 2-3 句话以内。"
+const smartReplySystemPrompt = "Bạn là một trợ lý bot IM chuyên nghiệp. Hãy dựa vào tình huống sự kiện dưới đây để tạo một tin nhắn thông báo ngắn gọn, rõ ràng bằng tiếng Việt. " +
+	"Yêu cầu: 1) Có thể dùng emoji vừa phải, không lạm dụng; 2) Giọng điệu chuyên nghiệp, bình đẳng như đồng nghiệp trò chuyện, không nịnh nọt, không dùng từ ngữ nũng nịu; " +
+	"3) Xuất trực tiếp nội dung tin nhắn, không thêm bất kỳ giải thích nào; " +
+	"4) Nếu sự kiện có chứa tóm tắt hoặc nội dung chi tiết, hãy trình bày có cấu trúc bằng Markdown (tiêu đề, danh sách, in đậm...), thể hiện đầy đủ, không cắt bớt hay khái quát; nếu chỉ là thông báo đơn giản thì giữ trong 2-3 câu."
 
 // sendSmartReply generates a notification message using the channel's LLM and sends it
 // to the user. If the adapter supports streaming (StreamSender), it streams the reply
@@ -3232,11 +3232,11 @@ func (s *Service) watchAndSendSummary(
 				// Parsing failed — notify user and stop watching
 				errMsg := knowledge.ErrorMessage
 				if errMsg == "" {
-					errMsg = "文档解析失败"
+					errMsg = "Phân tích tài liệu thất bại"
 				}
 				_ = s.sendSmartReply(ctx, adapter, msg, channel,
-					fmt.Sprintf("用户之前上传的%s解析失败了，错误原因：%s。请安慰用户并建议重试。", typeName, errMsg),
-					fmt.Sprintf("⚠️ %s解析失败：%s", typeName, errMsg))
+					fmt.Sprintf("%s người dùng tải lên trước đó đã phân tích thất bại, lý do: %s. Hãy trấn an người dùng và đề nghị thử lại.", typeName, errMsg),
+					fmt.Sprintf("⚠️ Phân tích %s thất bại: %s", typeName, errMsg))
 				return
 
 			case types.ParseStatusCompleted:
@@ -3248,12 +3248,12 @@ func (s *Service) watchAndSendSummary(
 					// still show it if present.
 					if knowledge.Description != "" && knowledge.Description != fileName {
 						_ = s.sendSmartReply(ctx, adapter, msg, channel,
-							fmt.Sprintf("用户之前上传的%s已解析完成。以下是文件的完整摘要内容：\n%s\n\n请生成一条通知消息，包含：1) 告知文件已解析完成；2) 用 Markdown 格式（标题、列表、加粗等）结构化展示上述摘要内容，不要删减或概括；3) 提示用户可以针对该文件提问。", typeName, knowledge.Description),
-							fmt.Sprintf("📄 %s已解析完成。\n\n**摘要：**\n\n%s\n\n---\n可以针对该文件进行提问。", typeName, knowledge.Description))
+							fmt.Sprintf("%s người dùng tải lên trước đó đã được phân tích xong. Dưới đây là toàn bộ nội dung tóm tắt của tệp:\n%s\n\nHãy tạo một tin nhắn thông báo gồm: 1) Báo rằng tệp đã được phân tích xong; 2) Trình bày nội dung tóm tắt trên có cấu trúc bằng Markdown (tiêu đề, danh sách, in đậm...), không cắt bớt hay khái quát; 3) Gợi ý người dùng có thể đặt câu hỏi về tệp này.", typeName, knowledge.Description),
+							fmt.Sprintf("📄 %s đã được phân tích xong.\n\n**Tóm tắt:**\n\n%s\n\n---\nBạn có thể đặt câu hỏi về tệp này.", typeName, knowledge.Description))
 					} else {
 						_ = s.sendSmartReply(ctx, adapter, msg, channel,
-							fmt.Sprintf("用户之前上传的%s已解析完成，现在可以开始针对该文件进行提问了。", typeName),
-							fmt.Sprintf("📄 %s已解析完成，可以开始提问了！", typeName))
+							fmt.Sprintf("%s người dùng tải lên trước đó đã được phân tích xong, giờ có thể bắt đầu đặt câu hỏi về tệp này.", typeName),
+							fmt.Sprintf("📄 %s đã được phân tích xong, bạn có thể bắt đầu đặt câu hỏi!", typeName))
 					}
 					return
 
@@ -3264,8 +3264,8 @@ func (s *Service) watchAndSendSummary(
 
 				case types.SummaryStatusFailed:
 					_ = s.sendSmartReply(ctx, adapter, msg, channel,
-						fmt.Sprintf("用户之前上传的%s已解析完成，但摘要生成失败了。不过文件已可用于提问。", typeName),
-						fmt.Sprintf("📄 %s已解析完成，可以开始提问了！（摘要生成失败）", typeName))
+						fmt.Sprintf("%s người dùng tải lên trước đó đã được phân tích xong, nhưng tạo tóm tắt thất bại. Tuy nhiên tệp đã sẵn sàng để đặt câu hỏi.", typeName),
+						fmt.Sprintf("📄 %s đã được phân tích xong, bạn có thể bắt đầu đặt câu hỏi! (tạo tóm tắt thất bại)", typeName))
 					return
 
 				default:
@@ -3300,11 +3300,11 @@ func (s *Service) sendSummaryNotification(
 	typeName := fileTypeName(fileName)
 	var situation, fallback string
 	if summary != "" && summary != fileName {
-		situation = fmt.Sprintf("用户之前上传的%s已解析完成。以下是文件的完整摘要内容：\n%s\n\n请生成一条通知消息，包含：1) 告知文件已解析完成；2) 用 Markdown 格式（标题、列表、加粗等）结构化展示上述摘要内容，不要删减或概括；3) 提示用户可以针对该文件提问。", typeName, summary)
-		fallback = fmt.Sprintf("📄 %s已解析完成。\n\n**摘要：**\n\n%s\n\n---\n可以针对该文件进行提问。", typeName, summary)
+		situation = fmt.Sprintf("%s người dùng tải lên trước đó đã được phân tích xong. Dưới đây là toàn bộ nội dung tóm tắt của tệp:\n%s\n\nHãy tạo một tin nhắn thông báo gồm: 1) Báo rằng tệp đã được phân tích xong; 2) Trình bày nội dung tóm tắt trên có cấu trúc bằng Markdown (tiêu đề, danh sách, in đậm...), không cắt bớt hay khái quát; 3) Gợi ý người dùng có thể đặt câu hỏi về tệp này.", typeName, summary)
+		fallback = fmt.Sprintf("📄 %s đã được phân tích xong.\n\n**Tóm tắt:**\n\n%s\n\n---\nBạn có thể đặt câu hỏi về tệp này.", typeName, summary)
 	} else {
-		situation = fmt.Sprintf("用户之前上传的%s已解析完成，现在可以开始针对该文件进行提问了。", typeName)
-		fallback = fmt.Sprintf("📄 %s已解析完成，可以开始提问了！", typeName)
+		situation = fmt.Sprintf("%s người dùng tải lên trước đó đã được phân tích xong, giờ có thể bắt đầu đặt câu hỏi về tệp này.", typeName)
+		fallback = fmt.Sprintf("📄 %s đã được phân tích xong, bạn có thể bắt đầu đặt câu hỏi!", typeName)
 	}
 
 	if err := s.sendSmartReply(ctx, adapter, msg, channel, situation, fallback); err != nil {
@@ -3343,23 +3343,23 @@ func imPlatformToChannel(platform string) string {
 func fileTypeName(filename string) string {
 	switch fileExtension(filename) {
 	case "pdf":
-		return "PDF 文档"
+		return "Tài liệu PDF"
 	case "doc", "docx":
-		return "Word 文档"
+		return "Tài liệu Word"
 	case "txt":
-		return "文本文件"
+		return "Tệp văn bản"
 	case "md", "markdown":
-		return "Markdown 文档"
+		return "Tài liệu Markdown"
 	case "png", "jpg", "jpeg", "gif":
-		return "图片"
+		return "Hình ảnh"
 	case "csv":
-		return "CSV 表格"
+		return "Bảng CSV"
 	case "xls", "xlsx":
-		return "Excel 表格"
+		return "Bảng Excel"
 	case "ppt", "pptx":
-		return "PPT 演示文稿"
+		return "Bài trình chiếu PPT"
 	default:
-		return "文件"
+		return "Tệp"
 	}
 }
 
