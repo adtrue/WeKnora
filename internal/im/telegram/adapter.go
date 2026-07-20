@@ -28,9 +28,10 @@ var (
 
 // Adapter implements im.Adapter for Telegram Bot API.
 type Adapter struct {
-	botToken    string
-	secretToken string // optional X-Telegram-Bot-Api-Secret-Token for webhook verification
-	client      *LongConnClient
+	botToken     string
+	secretToken  string // optional X-Telegram-Bot-Api-Secret-Token for webhook verification
+	client       *LongConnClient
+	allowedChats map[string]struct{} // AdTrue patch: see allowlist.go; empty = allow all
 }
 
 // NewWebhookAdapter creates a Telegram adapter for webhook mode.
@@ -124,7 +125,12 @@ func (a *Adapter) ParseCallback(c *gin.Context) (*im.IncomingMessage, error) {
 		return nil, fmt.Errorf("parse update: %w", err)
 	}
 
-	return parseUpdate(&update), nil
+	msg := parseUpdate(&update)
+	if !a.messageAllowed(msg) {
+		logger.Infof(c.Request.Context(), "[IM] Telegram message dropped (allowed_chat_ids): user=%s chat=%s", msg.UserID, msg.ChatID)
+		return nil, nil
+	}
+	return msg, nil
 }
 
 func parseUpdate(update *telegramUpdate) *im.IncomingMessage {

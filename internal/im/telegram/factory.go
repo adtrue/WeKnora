@@ -18,6 +18,7 @@ func NewFactory() im.AdapterFactory {
 		}
 
 		botToken := im.GetString(creds, "bot_token")
+		allowed := parseAllowedChatIDs(im.GetString(creds, "allowed_chat_ids"))
 
 		mode := im.ResolveMode(channel, "websocket")
 
@@ -25,10 +26,11 @@ func NewFactory() im.AdapterFactory {
 		case "webhook":
 			secretToken := im.GetString(creds, "secret_token")
 			adapter := NewWebhookAdapter(botToken, secretToken)
+			adapter.SetAllowedChatIDs(allowed)
 			return adapter, nil, nil
 
 		case "websocket":
-			client := NewLongConnClient(botToken, msgHandler)
+			client := NewLongConnClient(botToken, wrapAllowlistHandler(allowed, msgHandler))
 
 			wsCtx, wsCancel := context.WithCancel(context.Background())
 			go func() {
